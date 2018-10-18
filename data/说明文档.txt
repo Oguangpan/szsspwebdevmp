@@ -1,0 +1,43 @@
+表名 COMPUTERA
+固定资产编号 ID    TEXT,
+用户名 USER  TEXT,
+所属部门 DEP   TEXT,
+设备类型 TYPE  TEXT    NOT NULL,
+操作系统类型 SYS   TEXT,
+ipv4地址 IP    TEXT    NOT NULL,
+网卡地址 MAC   TEXT    NOT NULL,
+硬盘序列号 DISK  TEXT    NOT NULL
+
+// 连接数据库
+db, err := sql.Open("sqlite3", "./szdevDB.db")
+defer db.Close()
+checkErr(err)
+
+//添加新数据
+sql := `INSERT INTO COMPUTERA VALUES ('000001','张飞','设备管理部','台式兼容机','Windows xp','33.66.99.88','3a:33:1d:90:3c:21','DEB28471D');`
+db.Exec(sql)
+
+//更新数据
+stmt, err := db.Prepare("update COMPUTERA set USER=? where MAC=?") 
+checkErr(err)
+stmt.Exec("关羽", "3a:33:1d:90:3c:21")
+
+//删除数据
+stmt, _ := db.Prepare("delete from COMPUTERA where MAC=?")
+stmt.Exec("3a:33:1d:90:3c:21")
+
+//查询数据 但是这个是通过NEXT返回下数据列读取所有,所以名字叫ROWS
+rows, err := db.Query("select * from COMPUTERA where MAC='3a:33:1d:90:3c:21'")
+checkErr(err)
+defer rows.Close()
+for rows.Next() {
+    var p Cmpr
+    rows.Scan(&p.id, &p.user, &p.dep, &p.ty, &p.sys, &p.ip, &p.mac, &p.dkid)
+    fmt.Println(p.user)
+}
+
+//查询数据,只返回一个索引
+var p Cmpr
+row := db.QueryRow("select * from COMPUTERA where MAC='3a:33:1d:90:3c:21'")
+row.Scan(&p.id, &p.user, &p.dep, &p.ty, &p.sys, &p.ip, &p.mac, &p.dkid)
+fmt.Println(p.user)
