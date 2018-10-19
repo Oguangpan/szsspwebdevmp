@@ -9,9 +9,6 @@
 				text-align: center;
 				color:red;
 			}
-			.prompt{
-				text-align: center;
-			}
 			.queryBar{
 				padding-top:10px;
 				position: relative;
@@ -68,7 +65,7 @@
 					<input id="search_input" class="prompt" name="MACID" placeholder="请输入需要查询主机的mac地址" autocomplete="off">
 					<input type="submit" value="查询" />
 					<input type="button" onClick="location='edit'" value="添加/编辑" /><p>
-					{{ . }}
+					<div>{{ . }}</div>
 				</form>
 			</div>
 
