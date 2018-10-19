@@ -1,62 +1,5 @@
 {{ define "index" }}
-<!DOCTYPE html>
-<html>
-	<head>
-		<meta http-equiv="Content-Type" charset="utf-8" name="viewport" content="text/html; charset=utf-8; width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"/>
-		<title>设备信息查询平台</title>
-		<style>
-			body > h2:nth-child(2){
-				text-align: center;
-				color:red;
-			}
-			.queryBar{
-				padding-top:10px;
-				position: relative;
-				text-align: center;
-				max-width: 100%;
-				box-sizing: inherit;
-			}
-			.table_info{
-				padding-top:10px;
-				position: relative;
-				text-align:left;
-				max-width: 40%;
-				padding-top:20px;
-				padding-bottom:auto;
-				margin:auto;
-			}
-			#customers
-			{
-				font-family:"Trebuchet MS", Arial, Helvetica, sans-serif;
-				width:100%;
-				border-collapse:collapse;
-			}
-			#customers td, #customers th
-			{
-				font-size:1em;
-				border:1px solid #98bf21;
-				padding:3px 7px 2px 7px;
-			}
-			#customers th
-			{
-				font-size:1.1em;
-				text-align:left;
-				padding-top:5px;
-				padding-bottom:4px;
-				background-color:#A7C942;
-				color:#ffffff;
-			}
-			#customers tr.alt td
-			{
-				color:#000000;
-				background-color:#EAF2D3;
-			}
-			.p{
-				color:gray;
-			}
-		</style>
-	</head>
-	<body>
+{{ template "head" }}
 		<div class="queryBar">
 			<h1>欢迎访问办公设备信息查询页</h1>
 			<div class="p">请输入主机mac地址,即可查询对应信息.</div><br>
@@ -65,11 +8,10 @@
 					<input id="search_input" class="prompt" name="MACID" placeholder="请输入需要查询主机的mac地址" autocomplete="off">
 					<input type="submit" value="查询" />
 					<input type="button" onClick="location='edit'" value="添加/编辑" /><p>
-					<div>{{ . }}</div>
+					<div>{{ .Msg }}</div>
 				</form>
 			</div>
-
 		</div>
-	</body>
-</html>
+{{ template "table" .Data }}
+{{ template "tail" }}
 {{ end }}

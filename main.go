@@ -1,13 +1,67 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"html/template" // 生成需要的网页模板
 	"net/http"
 	"regexp" //验证用户输入
 
-	_ "szsspwebdevmp/data"
+	_ "github.com/mattn/go-sqlite3"
 )
+
+var db *sql.DB
+
+func init() {
+	db, _ = sql.Open("sqlite3", "data/szdevDB.db")
+}
+
+type diannao struct {
+	shuxing map[string]string
+}
+
+//var d = new(diannao)
+//d.chaxun("92:4f:9a:ec:78:fd")
+//d.genggai("92:4f:9a:ec:78:fd")
+//d.shanchu("92:4f:9a:ec:78:fd")
+//d.charu(map[string]string)
+
+// 查询数据
+func (s *diannao) chaxun(mac string) (ok bool) {
+	var t string = `select * from COMPUTERA where MAC='` + mac + `'`
+	row := db.QueryRow(t)
+	err := row.Scan(&p["id"], &p["user"], &p["dep"], &p["type"], &p["sys"], &p["ip"], &p["mac"], &p["disk"])
+	if err != nil {
+		return false
+	}
+	return true
+}
+func (s *diannao) genggai(mac string) (ok bool) {
+
+	stmt, err := db.Prepare("update COMPUTERA set ID=?,USER=?,DEP=?,TYPE=?,SYS=?,IP=?,MAC=?,DISK=? where MAC=?")
+	if err != nil {
+		return false
+	}
+	stmt.Exec(s.shuxing["id"], s.shuxing["user"], s.shuxing["dep"], s.shuxing["type"], s.shuxing["sys"], s.shuxing["ip"], s.shuxing["mac"], s.shuxing["disk"], mac)
+	return true
+
+}
+func (s *diannao) shanchu(mac string) (ok bool) {
+	stmt, err := db.Prepare("delete from COMPUTERA where MAC=?")
+	if err != nil {
+		return false
+	}
+	_, err = stmt.Exec(mac)
+	if err != nil {
+		return false
+	}
+	return true
+}
+func (s *diannao) charu() (ok bool) {
+	sql := `INSERT INTO COMPUTERA VALUES ('` + s.shuxing["id"] + `','` + s.shuxing["user"] + `','` + s.shuxing["dep"] + `','` + s.shuxing["type"] + `','` + s.shuxing["sys"] + `','` + s.shuxing["ip"] + `','` + s.shuxing["mac"] + `','` + s.shuxing["disk"] + `');`
+	db.Exec(sql)
+	return true
+}
 
 // 路由
 type MyMux struct{}
@@ -25,96 +79,78 @@ func (p *MyMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		queryPage(w, r)
 		return
 	}
-	if r.URL.Path == "/test" {
-		testPage(w, r)
-		return
-	}
 	http.NotFound(w, r)
 	return
 }
 
-func testPage(w http.ResponseWriter, r *http.Request) {
-
-	const tpl = `
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <title>{{.Title}}</title>
-    </head>
-    <body>
-        {{range .Items}}<div>{{ . }}</div>{{else}}<div><strong>no rows</strong></div>{{end}}
-    </body>
-</html>`
-
-	check := func(err error) {
-		if err != nil {
-			fmt.Println(err)
-		}
-	}
-
-	// 创建一个新的模板，并且载入内容
-	t, err := template.New("webpage").Parse(tpl)
-	check(err)
-
-	// 定义传入到模板的数据，并在终端打印
-	data := struct {
-		Title string
-		Items []string
-	}{
-		Title: "My page",
-		Items: []string{
-			"My photos",
-			"My blog",
-			"My superman",
-			"My test",
-		},
-	}
-	err = t.Execute(w, data)
-	check(err)
-
-	// 定义Items为空的数据
-	noItems := struct {
-		Title string
-		Items []string
-	}{
-		Title: "My another page",
-		Items: []string{},
-	}
-	err = t.Execute(w, noItems)
-	check(err)
-}
-
 func mainPage(w http.ResponseWriter, r *http.Request) {
 
-	t, _ := template.ParseFiles("templates/index.html")
-	t.ExecuteTemplate(w, "index", "")
+	t, _ := template.ParseFiles("templates/index.html", "templates/table.html", "templates/head.html", "templates/tail.html")
+	*hd.Msg = "欢迎使用办公设备信息查询系统"
+	//	data := struct {
+	//		Msg  string
+	//		Data []string
+	//	}{
+	//		Msg:  "欢迎使用办公设备信息查询系统",
+	//		Data: []string{},
+	//	}
+	t.ExecuteTemplate(w, "index", *hd)
 
 }
 
 func queryPage(w http.ResponseWriter, r *http.Request) {
 
-	//t, _ := template.ParseFiles("templates/index.html", "templates/table.html")
-	//t.ExecuteTemplate(w, "index", "")
-	// t.Execute(w, "目前未有查询数据展示...")
-	t, _ := template.ParseFiles("templates/index.html", "templates/table.html")
+	t, _ := template.ParseFiles("templates/index.html", "templates/table.html", "templates/head.html", "templates/tail.html")
 
 	v := r.FormValue("MACID")
 
 	if v != "" {
-		// 取消正则表达式中对XX-XX-XX-XX-XX-XX的匹配,因为懒不想做转换匹配数据库中的内容
 		if m, _ := regexp.MatchString("^([A-Fa-f0-9]{2}:){5}[A-Fa-f0-9]{2}", v); !m {
-			// fmt.Println("User input is not MAC")
-			t.ExecuteTemplate(w, "index", "请输入正确的mac格式...cmd命令行中输入ipconfig即可看到网卡的正确mac信息")
-			return
+			//			data := struct {
+			//				Msg  string
+			//				Data []string
+			//			}{
+			//				Msg:  "请输入正确的mac格式...cmd命令行中输入ipconfig即可看到网卡的正确mac信息",
+			//				Data: []string{},
+			//			}
+			*hd.Msg = "请输入正确的mac格式...cmd命令行中输入ipconfig即可看到网卡的正确mac信息"
+			t.ExecuteTemplate(w, "index", *hd)
+		} else {
+			// 调用数据库查询 v 返回对应数据到 Data 里面
+			//			data := struct {
+			//				Msg  string
+			//				Data []string
+			//			}{
+			//				Msg:  "查询结果如下",
+			//				Data: []string{},
+			//			}
+			*hd.Msg = "查询结果如下"
+
+			/*
+					<tr>
+				        <td>使用者姓名</td>
+				        <td>张三</td>
+				    </tr>
+				    <tr class="alt">
+				        <td>所属部门</td>
+				        <td>生产安全部</td>
+				    </tr>
+			*/
+			t.ExecuteTemplate(w, "index", *hd)
 		}
 
-		//根据用户输入进入数据库查询并且通过模板写出数据
-		t.ExecuteTemplate(w, "table", "")
 		return
 
 	} else {
-		t.ExecuteTemplate(w, "index", "请输入查询内容")
+		//		data := struct {
+		//			Msg  string
+		//			Data []string
+		//		}{
+		//			Msg:  "请输入查询内容",
+		//			Data: []string{},
+		//		}
+		*hd.Msg = "请输入查询内容"
+		t.ExecuteTemplate(w, "index", hd)
 	}
 
 }
