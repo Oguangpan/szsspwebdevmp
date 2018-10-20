@@ -2,40 +2,40 @@
 <div class="table_info">
 	<table id="customers">
 		<tr>
-			<th>属性</th>
-			<th>对应信息</th>
+			<th>item</th>
+			<th>value</th>
 		</tr>
 	    <tr>
 	        <td>使用者姓名</td>
-	        <td>张三</td>
+	        <td>{{ .User }}</td>
 	    </tr>
 	    <tr class="alt">
 	        <td>所属部门</td>
-	        <td>生产安全部</td>
+	        <td>{{ .Dep }}</td>
 	    </tr>
 		<tr>
 	        <td>设备类型</td>
-	        <td>台式机</td>
+	        <td>{{ .Type }}</td>
 	    </tr>
 		<tr class="alt">
 	        <td>mac地址</td>
-	        <td>12:22:ab:44:2c</td>
+	        <td>{{ .Mac }}</td>
 	    </tr>
 		<tr>
 	        <td>IP地址</td>
-	        <td>33.66.100.1</td>
+	        <td>{{ .Ip }}</td>
 	    </tr>
 		<tr class="alt">
 	        <td>系统版本</td>
-	        <td>Windows xp sp3</td>
+	        <td>{{ .Sys }}</td>
 	    </tr>
 		<tr>
 	        <td>硬盘序列号</td>
-	        <td>3MDTSS589</td>
+	        <td>{{ .Disk }}</td>
 	    </tr>
 		<tr class="alt">
 	        <td>固定资产编号</td>
-	        <td>2ce9f7c</td>
+	        <td>{{ .Id }}</td>
 	    </tr>
 	</table>
 </div>
