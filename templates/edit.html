@@ -4,6 +4,7 @@
 	<head>
 		<meta http-equiv="Content-Type" charset="utf-8" name="viewport" content="text/html; charset=utf-8; width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"/>
 		<title>设备信息查询平台-设备信息编辑</title>
+
 		<style>
 			.h{display:flex;text-align: center;flex-direction: column;justify-content: center;}
 			.p{color:gray;margin:5px;}
@@ -11,51 +12,86 @@
 			.d{display:flex;justify-content:space-between;padding:0.1em;}
 			#button{padding-top:20px;}
 			input{width:180px;}
-
 		</style>
 	</head>
 	<body>
-	<div class="h">
-		<h1>请填写必要信息</h1>
-		<div class="p">如果数据库中存在该信息,提交后会做出相应提示.</div><p>
-		<div class="input_form">
-		<form class="f">
-			<div class="d"><label>使用者姓名:</label><input type="text" name="user" /></div>
-			<div class="d"><label>所属部门:</label><select name="department" class="s">
-				<option value="gc">公司高层</option>
-				<option value="rl">人力资源部</option>
-				<option value="gs" selected>公司办</option>
-				<option value="cw">财务部</option>
-				<option value="cg">采供中心</option>
-				<option value="js">技术质量部</option>
-				<option value="sc">市场管理部</option>
-				<option value="xs">销售公司</option>
-				<option value="sb">设备运行部</option>
-				<option value="sc">生产安全部</option>
-				<option value="rz">热轧车间</option>
-				<option value="jz">精整车间</option>
-				<option value="dl">动力车间</option>
-				<option value="zb">准备车间</option>
-				</select></div>
-			<div class="d"><label>设备类型:</label><select name="Equipment_type" class="s">
-				<option value="bj">笔记本电脑</option>
-				<option value="pp" selected>台式品牌机</option>
-				<option value="jr">台式兼容机</option>
-				</select></div>
-			<div class="d"><label>mac地址:</label><input type="text" name="mac" /></div>
-			<div class="d"><label>IP地址:</label><input type="text" name="ip" /></div>
-			<div class="d"><label>系统版本:</label><select name="system_type" class="s">
-				<option value="winxp">Windows xp</option>
-				<option value="win7" selected>windows 7</option>
-				<option value="win10">windows 10</option>
-				</select></div>
-			<div class="d"><label>固定资产编号:</label><input type="text" name="id" /></div>
-			<div class="d"><label>硬盘序列号:</label><input type="text" name="diskid" /></div>
-			<div class="d" id="button"><input type="submit" value="提交更新数据" />
-			<input type="button" onClick="location='/'" value="返回查询页面" /></div>
-		</form></div>
+		<script>
+			function validateForm(){
+				var x=document.forms["officeFrom"]["Equipment_type"].value;
+				if (x==null || x==""){
+					alert("设备类型必须填写");
+					return false;
+				}
+				var y=document.forms["officeFrom"]["ip"].value;
+				if (y==null || y==""){
+					alert("IP地址必须填写");
+					return false;
+				}else{
+					var pattIp = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/g;
+					if(!pattIp.test(y)){
+						alert("IP地址不正确")
+						return false;
+					}
+				}
+				var z=document.forms["officeFrom"]["mac"].value;
+				if (z==null || z==""){
+					alert("网卡地址必须填写");
+					return false;
+				}else{
+					var reg=/^[A-Fa-f\d]{2}:[A-Fa-f\d]{2}:[A-Fa-f\d]{2}:[A-Fa-f\d]{2}:[A-Fa-f\d]{2}:[A-Fa-f\d]{2}$/;
+					if(!reg.test(z)){
+						alert("mac地址不正确！");
+						return false;
+					}
+				}
+				var l=document.forms["officeFrom"]["diskid"].value;
+				if (l==null || l==""){
+					alert("硬盘序列号必须填写");
+					return false;
+				}
+			}
+		</script>
+		<div class="h">
+			<h1>请填写必要信息</h1>
+			<div class="p">如果数据库中存在该信息,提交后会做出相应提示.</div><p>
+			<div class="input_form">
+			<form class="f" action="edit_post" name="officeFrom" method="post"  onsubmit="return validateForm()">
+				<div class="d"><label>使用者姓名:</label><input type="text" name="user" /></div>
+				<div class="d"><label>所属部门:</label><select name="department" class="s">
+					<option value="gc">公司高层</option>
+					<option value="rl">人力资源部</option>
+					<option value="gs" selected>公司办</option>
+					<option value="cw">财务部</option>
+					<option value="cg">采供中心</option>
+					<option value="js">技术质量部</option>
+					<option value="sc">市场管理部</option>
+					<option value="xs">销售公司</option>
+					<option value="sb">设备运行部</option>
+					<option value="sc">生产安全部</option>
+					<option value="rz">热轧车间</option>
+					<option value="jz">精整车间</option>
+					<option value="dl">动力车间</option>
+					<option value="zb">准备车间</option>
+					</select></div>
+				<div class="d"><label>设备类型:</label><select name="Equipment_type" class="s">
+					<option value="bj">笔记本电脑</option>
+					<option value="pp" selected>台式品牌机</option>
+					<option value="jr">台式兼容机</option>
+					</select></div>
+				<div class="d"><label>mac地址:</label><input type="text" name="mac" /></div>
+				<div class="d"><label>IP地址:</label><input type="text" name="ip" /></div>
+				<div class="d"><label>系统版本:</label><select name="system_type" class="s">
+					<option value="winxp">Windows xp</option>
+					<option value="win7" selected>windows 7</option>
+					<option value="win10">windows 10</option>
+					</select></div>
+				<div class="d"><label>固定资产编号:</label><input type="text" name="id" /></div>
+				<div class="d"><label>硬盘序列号:</label><input type="text" name="diskid" /></div>
+				<div class="d" id="button"><input type="submit" value="提交更新数据" />
+				<input type="button" onClick="location='/'" value="返回查询页面" /></div>
+			</form></div>
 
-	</div>
+		</div>
 	</body>
 </html>
 {{ end }}
