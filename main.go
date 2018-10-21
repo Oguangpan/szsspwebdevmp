@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"html/template" // 生成需要的网页模板
+	"log"
 	"net/http"
 	"regexp" //验证用户输入
 
@@ -90,70 +91,32 @@ var h = new(hd)
 type MyMux struct{}
 
 func (p *MyMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path == "/" {
+	switch r.URL.Path {
+	case "/":
 		mainPage(w, r)
-		return
-	}
-	if r.URL.Path == "/edit" {
+	case "/edit":
 		editPage(w, r)
-		return
-	}
-	if r.URL.Path == "/edit_post" {
-		editpostPage(w, r)
-		return
-	}
-	if r.URL.Path == "/query" {
+	case "/query":
 		queryPage(w, r)
-		return
+	default:
+		http.NotFound(w, r)
 	}
-	http.NotFound(w, r)
-	return
-}
-
-func editpostPage(w http.ResponseWriter, r *http.Request) {
-	// TODO
-	// 与用户交互用的页面
-	// 这里必须学会使用JavaScript与golang交互之后才能继续写下去了.
-	// 获取输入(关键数据验证由页面上的javascript来验证)
-	dn := new(Basic_information_of_device)
-	dn.Id = r.PostForm.Get("id")
-	dn.User = r.PostForm.Get("user")
-	dn.Dep = r.PostForm.Get("department")
-	dn.Ip = r.PostForm.Get("ip")
-	dn.Mac = r.PostForm.Get("mac")
-	dn.Sys = r.PostForm.Get("system_type")
-	dn.Type = r.PostForm.Get("Equipment_type")
-	dn.Disk = r.PostForm.Get("diskid")
-
-	// 在数据库中查询提交的数据是否重合,判断的标准是MAC\ID\DISKID其中之一.
-	if ok := d.Inquire(dn.Mac, "mac"); ok {
-		// 提示用户数据重复,询问是否修改,如果选择修改就修改,不修改就返回
-		return
-	}
-	if ok := d.Inquire(dn.Mac, "id"); ok {
-		return
-	}
-	if ok := d.Inquire(dn.Mac, "diskid"); ok {
-		return
-	}
-	// 添加新数据
-	// 修改老数据
 }
 
 func mainPage(w http.ResponseWriter, r *http.Request) {
-	t, _ := template.ParseFiles("templates/index.html", "templates/table.html", "templates/head.html", "templates/tail.html")
-	h.Msg = "无权限限制请随意更改数据库"
+	t, _ := template.ParseFiles("templates/index.tmpl", "templates/table.tmpl",
+		"templates/index-top.tmpl", "templates/index-bottom.tmpl")
+	h.Msg = "无权限限制,请随意更改数据库"
 	h.Data = d
 	t.ExecuteTemplate(w, "index", h)
 
 }
 
 func queryPage(w http.ResponseWriter, r *http.Request) {
-
-	t, _ := template.ParseFiles("templates/index.html", "templates/table.html", "templates/head.html", "templates/tail.html")
-
+	r.ParseForm()
+	t, _ := template.ParseFiles("templates/index.tmpl", "templates/table.tmpl",
+		"templates/index-top.tmpl", "templates/index-bottom.tmpl")
 	v := r.FormValue("MACID")
-
 	if v != "" {
 		if m, _ := regexp.MatchString("^([A-Fa-f0-9]{2}:){5}[A-Fa-f0-9]{2}", v); !m {
 			h.Data = d
@@ -171,31 +134,84 @@ func queryPage(w http.ResponseWriter, r *http.Request) {
 			}
 
 		}
-
 		return
-
 	} else {
 		h.Msg = "请输入查询内容"
 		h.Data = d
 		t.ExecuteTemplate(w, "index", h)
 	}
-
 }
 
 func editPage(w http.ResponseWriter, r *http.Request) {
-	t, _ := template.ParseFiles("templates/edit.html")
-	t.ExecuteTemplate(w, "edit", "")
-	return
+
+	display_page := func(w http.ResponseWriter, r *http.Request, h string, mw string) {
+		t, _ := template.ParseFiles(h,
+			"templates/index-top.tmpl",
+			"templates/index-bottom.tmpl")
+		t.ExecuteTemplate(w, mw, "")
+	}
+
+	r.ParseForm()
+
+	// TODO 这里有一个非常严重的问题,明明获取到了v的值,却在第二次访问页面的时候无法进入case "editpost":或者是下面的case "editerror":
+	// 我反复的验证了v这个隐藏域的值是正确的,但是就是无法成功的进入下面的代码.只有首次访问页面的时候才能正确的执行case "": 后面的内容
+	// v变量是隐藏域属性,表示上次访问来源
+	switch v := r.PostForm.Get("yc"); v {
+	case "":
+		display_page(w, r, "templates/edit.tmpl", "edit")
+	case "editpost":
+		fmt.Println("ri")
+		dn := new(Basic_information_of_device)
+		dn.Id = r.PostForm.Get("id")
+		dn.User = r.PostForm.Get("user")
+		dn.Dep = r.PostForm.Get("department")
+		dn.Ip = r.PostForm.Get("ip")
+		dn.Mac = r.PostForm.Get("mac")
+		dn.Sys = r.PostForm.Get("system_type")
+		dn.Type = r.PostForm.Get("Equipment_type")
+		dn.Disk = r.PostForm.Get("diskid")
+		switch ok := false; ok {
+		case d.Inquire(dn.Mac, "mac"):
+			//如果重复交给用户判断是否覆盖
+			display_page(w, r, "templates/editerr.tmpl", "editerr")
+			return
+		case d.Inquire(dn.Mac, "id"):
+			display_page(w, r, "templates/editerr.tmpl", "editerr")
+			return
+		case d.Inquire(dn.Mac, "diskid"):
+			display_page(w, r, "templates/editerr.tmpl", "editerr")
+			return
+		default:
+			//没有重复数据,直接添加到服务器.
+			log.Println("现在开始往数据库里面添加数据")
+
+			display_page(w, r, "templates/editok.tmpl", "editok")
+			return
+		}
+	case "editerror": //用户已经决定是否覆盖已有数据展示成功页面.
+		//获取用户选择是覆盖还是退出
+		log.Println("现在开始往数据库里面添加数据")
+		//然后返回一个成功页面,给出一个提示后让用户决定是否返回主页: 其实我要是知道怎么出现弹窗的话就更方便了.
+		display_page(w, r, "templates/editok.tmpl", "editok")
+	}
 }
 
 func main() {
 	defer db.Close()
 	// 特别说明: 要使用80端口需要使用管理员身份运行程序.
+	/*
+		模板文件说明
+		- 主页模板 #每次都需要载入,下面的模板根据需要加载.
+		    - 查询页面
+		    - 查询结果页面/新增结果页面/提交结果确认
+		    - 编辑页面
+		    - 提交确认反馈页面
+	*/
 	mux := &MyMux{}
-	fmt.Println("now Listening port...")
+	log.Println("now Listening port...")
 	err := http.ListenAndServe(":9999", mux)
 	if err != nil {
-		fmt.Println("ListenAndServe:", err)
+		log.Println("ListenAndServe:", err)
 	}
 
 }
