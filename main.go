@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"html/template" // 生成需要的网页模板
 	"log"
 	"net/http"
@@ -30,7 +29,7 @@ type Basic_information_of_device struct {
 
 var d *Basic_information_of_device = new(Basic_information_of_device)
 
-// 查询(目标,类型)成否
+// 查询(目标,字段)成否
 func (s *Basic_information_of_device) Inquire(c string, i string) (ok bool) {
 	var t string
 	switch i {
@@ -98,6 +97,8 @@ func (p *MyMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		editPage(w, r)
 	case "/query":
 		queryPage(w, r)
+	case "/editerr":
+		editerrPage(w, r)
 	default:
 		http.NotFound(w, r)
 	}
@@ -132,9 +133,7 @@ func queryPage(w http.ResponseWriter, r *http.Request) {
 				h.Msg = "数据库中没有该设备信息"
 				t.ExecuteTemplate(w, "index", h)
 			}
-
 		}
-		return
 	} else {
 		h.Msg = "请输入查询内容"
 		h.Data = d
@@ -142,71 +141,67 @@ func queryPage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func editPage(w http.ResponseWriter, r *http.Request) {
-
+func editerrPage(w http.ResponseWriter, r *http.Request) {
 	display_page := func(w http.ResponseWriter, r *http.Request, h string, mw string) {
 		t, _ := template.ParseFiles(h,
 			"templates/index-top.tmpl",
 			"templates/index-bottom.tmpl")
 		t.ExecuteTemplate(w, mw, "")
 	}
+	if r.Method == "GET" {
+		display_page(w, r, "templates/editerr.tmpl", "editerr")
+	} else {
 
-	r.ParseForm()
-
-	// TODO 这里有一个非常严重的问题,明明获取到了v的值,却在第二次访问页面的时候无法进入case "editpost":或者是下面的case "editerror":
-	// 我反复的验证了v这个隐藏域的值是正确的,但是就是无法成功的进入下面的代码.只有首次访问页面的时候才能正确的执行case "": 后面的内容
-	// v变量是隐藏域属性,表示上次访问来源
-	switch v := r.PostForm.Get("yc"); v {
-	case "":
-		display_page(w, r, "templates/edit.tmpl", "edit")
-	case "editpost":
-		fmt.Println("ri")
-		dn := new(Basic_information_of_device)
-		dn.Id = r.PostForm.Get("id")
-		dn.User = r.PostForm.Get("user")
-		dn.Dep = r.PostForm.Get("department")
-		dn.Ip = r.PostForm.Get("ip")
-		dn.Mac = r.PostForm.Get("mac")
-		dn.Sys = r.PostForm.Get("system_type")
-		dn.Type = r.PostForm.Get("Equipment_type")
-		dn.Disk = r.PostForm.Get("diskid")
-		switch ok := false; ok {
-		case d.Inquire(dn.Mac, "mac"):
-			//如果重复交给用户判断是否覆盖
+		if d.Inquire(d.Mac, "mac") {
+			log.Println("mac已存在")
 			display_page(w, r, "templates/editerr.tmpl", "editerr")
-			return
-		case d.Inquire(dn.Mac, "id"):
+		} else if d.Inquire(d.Id, "id") {
+			log.Println("id已存在")
 			display_page(w, r, "templates/editerr.tmpl", "editerr")
-			return
-		case d.Inquire(dn.Mac, "diskid"):
+		} else if d.Inquire(d.Disk, "diskid") {
+			log.Println("diskid已存在")
 			display_page(w, r, "templates/editerr.tmpl", "editerr")
-			return
-		default:
+		} else {
 			//没有重复数据,直接添加到服务器.
 			log.Println("现在开始往数据库里面添加数据")
-
 			display_page(w, r, "templates/editok.tmpl", "editok")
-			return
 		}
-	case "editerror": //用户已经决定是否覆盖已有数据展示成功页面.
+
 		//获取用户选择是覆盖还是退出
-		log.Println("现在开始往数据库里面添加数据")
-		//然后返回一个成功页面,给出一个提示后让用户决定是否返回主页: 其实我要是知道怎么出现弹窗的话就更方便了.
-		display_page(w, r, "templates/editok.tmpl", "editok")
+		//		log.Println("现在开始往数据库里面添加数据")
+		//		然后返回一个成功页面,给出一个提示后让用户决定是否返回主页: 其实我要是知道怎么出现弹窗的话就更方便了.
+		//		display_page(w, r, "templates/editok.tmpl", "editok")
 	}
+}
+
+func editPage(w http.ResponseWriter, r *http.Request) {
+	display_page := func(w http.ResponseWriter, r *http.Request, h string, mw string) {
+		t, _ := template.ParseFiles(h,
+			"templates/index-top.tmpl",
+			"templates/index-bottom.tmpl")
+		t.ExecuteTemplate(w, mw, "")
+	}
+	r.ParseForm()
+	// 通过判断请求方法是get还是post决定执行
+	if r.Method == "GET" {
+		display_page(w, r, "templates/edit.tmpl", "edit")
+	} else {
+		d.id = r.PostForm.Get("id")
+		d.User = r.PostForm.Get("user")
+		d.Dep = r.PostForm.Get("department")
+		d.ip = r.PostForm.Get("ip")
+		d.mac = r.PostForm.Get("mac")
+		d.Sys = r.PostForm.Get("system_type")
+		d.Type = r.PostForm.Get("Equipment_type")
+		d.Disk = r.PostForm.Get("diskid")
+		//		log.Println("现在开始往数据库里面添加数据")
+		//		display_page(w, r, "templates/editok.tmpl", "editok")
+	}
+
 }
 
 func main() {
 	defer db.Close()
-	// 特别说明: 要使用80端口需要使用管理员身份运行程序.
-	/*
-		模板文件说明
-		- 主页模板 #每次都需要载入,下面的模板根据需要加载.
-		    - 查询页面
-		    - 查询结果页面/新增结果页面/提交结果确认
-		    - 编辑页面
-		    - 提交确认反馈页面
-	*/
 	mux := &MyMux{}
 	log.Println("now Listening port...")
 	err := http.ListenAndServe(":9999", mux)
