@@ -49,16 +49,16 @@ func (s *Basic_information_of_device) Inquire(c string, i string) (ok bool) {
 	return true
 }
 
-//func (s *Basic_information_of_device) Modify(mac string) (ok bool) {
+func (s *Basic_information_of_device) Modify(mac string) (ok bool) {
 
-//	stmt, err := db.Prepare("update COMPUTERA set ID=?,USER=?,DEP=?,TYPE=?,SYS=?,IP=?,MAC=?,DISK=? where MAC=?")
-//	if err != nil {
-//		return false
-//	}
-//	stmt.Exec(s.Attributes["id"], s.Attributes["user"], s.Attributes["dep"], s.Attributes["type"], s.Attributes["sys"], s.Attributes["ip"], s.Attributes["mac"], s.Attributes["disk"], mac)
-//	return true
+	stmt, err := db.Prepare("update COMPUTERA set ID=?,USER=?,DEP=?,TYPE=?,SYS=?,IP=?,MAC=?,DISK=? where MAC=?")
+	if err != nil {
+		return false
+	}
+	stmt.Exec(s.Id, s.User, s.Dep, s.Type, s.Sys, s.Ip, s.Mac, s.Disk, mac)
+	return true
 
-//}
+}
 
 // 输入mac删除对应设备在数据库中的记录
 func (s *Basic_information_of_device) Delete(mac string) (ok bool) {
@@ -73,11 +73,11 @@ func (s *Basic_information_of_device) Delete(mac string) (ok bool) {
 	return true
 }
 
-//func (s *Basic_information_of_device) Increase() (ok bool) {
-//	sql := `INSERT INTO COMPUTERA VALUES ('` + s.Attributes["id"] + `','` + s.Attributes["user"] + `','` + s.Attributes["dep"] + `','` + s.Attributes["type"] + `','` + s.Attributes["sys"] + `','` + s.Attributes["ip"] + `','` + s.Attributes["mac"] + `','` + s.Attributes["disk"] + `');`
-//	db.Exec(sql)
-//	return true
-//}
+func (s *Basic_information_of_device) Increase() (ok bool) {
+	sql := `INSERT INTO COMPUTERA VALUES ('` + s.Id + `','` + s.User + `','` + s.Dep + `','` + s.Type + `','` + s.Sys + `','` + s.Ip + `','` + s.Mac + `','` + s.Disk + `');`
+	db.Exec(sql)
+	return true
+}
 
 type hd struct {
 	Msg  string
@@ -148,29 +148,20 @@ func editerrPage(w http.ResponseWriter, r *http.Request) {
 			"templates/index-bottom.tmpl")
 		t.ExecuteTemplate(w, mw, "")
 	}
+	r.ParseForm()
+	log.Println(r.PostForm.Get("sel"))
 	if r.Method == "GET" {
 		display_page(w, r, "templates/editerr.tmpl", "editerr")
 	} else {
 
-		if d.Inquire(d.Mac, "mac") {
-			log.Println("mac已存在")
-			display_page(w, r, "templates/editerr.tmpl", "editerr")
-		} else if d.Inquire(d.Id, "id") {
-			log.Println("id已存在")
-			display_page(w, r, "templates/editerr.tmpl", "editerr")
-		} else if d.Inquire(d.Disk, "diskid") {
-			log.Println("diskid已存在")
-			display_page(w, r, "templates/editerr.tmpl", "editerr")
+		if r.PostForm.Get("sel") == "yes" {
+			if d.Modify(d.Mac) {
+				display_page(w, r, "templates/editok.tmpl", "editok")
+			}
 		} else {
-			//没有重复数据,直接添加到服务器.
-			log.Println("现在开始往数据库里面添加数据")
-			display_page(w, r, "templates/editok.tmpl", "editok")
+			log.Println("user select clecot")
+			display_page(w, r, "templates/edit.tmpl", "edit")
 		}
-
-		//获取用户选择是覆盖还是退出
-		//		log.Println("现在开始往数据库里面添加数据")
-		//		然后返回一个成功页面,给出一个提示后让用户决定是否返回主页: 其实我要是知道怎么出现弹窗的话就更方便了.
-		//		display_page(w, r, "templates/editok.tmpl", "editok")
 	}
 }
 
@@ -186,16 +177,31 @@ func editPage(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		display_page(w, r, "templates/edit.tmpl", "edit")
 	} else {
-		d.id = r.PostForm.Get("id")
+		d.Id = r.PostForm.Get("id")
 		d.User = r.PostForm.Get("user")
 		d.Dep = r.PostForm.Get("department")
-		d.ip = r.PostForm.Get("ip")
-		d.mac = r.PostForm.Get("mac")
+		d.Ip = r.PostForm.Get("ip")
+		d.Mac = r.PostForm.Get("mac")
 		d.Sys = r.PostForm.Get("system_type")
 		d.Type = r.PostForm.Get("Equipment_type")
 		d.Disk = r.PostForm.Get("diskid")
-		//		log.Println("现在开始往数据库里面添加数据")
-		//		display_page(w, r, "templates/editok.tmpl", "editok")
+		if d.Inquire(d.Mac, "mac") {
+			log.Println("mac已存在")
+			display_page(w, r, "templates/editerr.tmpl", "editerr")
+		} else if d.Inquire(d.Id, "id") {
+			log.Println("id已存在")
+			display_page(w, r, "templates/editerr.tmpl", "editerr")
+		} else if d.Inquire(d.Disk, "diskid") {
+			log.Println("diskid已存在")
+			display_page(w, r, "templates/editerr.tmpl", "editerr")
+		} else {
+			//没有重复数据,直接添加到服务器.
+			if d.Increase() {
+				display_page(w, r, "templates/editok.tmpl", "editok")
+			}
+
+		}
+
 	}
 
 }
