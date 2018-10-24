@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"html/template" // 生成需要的网页模板
+	"io"
 	"log"
 	"net/http"
 	"regexp" //验证用户输入
@@ -105,11 +106,17 @@ func (p *MyMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func mainPage(w http.ResponseWriter, r *http.Request) {
-	t, _ := template.ParseFiles("templates/index.tmpl", "templates/table.tmpl",
-		"templates/index-top.tmpl", "templates/index-bottom.tmpl")
-	h.Msg = "无权限限制,请随意更改数据库"
-	h.Data = d
-	t.ExecuteTemplate(w, "index", h)
+	if r.Method == "GET" {
+		t, _ := template.ParseFiles("templates/index.tmpl", "templates/table.tmpl",
+			"templates/index-top.tmpl", "templates/index-bottom.tmpl")
+		h.Msg = "无权限限制,请随意更改数据库"
+		h.Data = d
+		t.ExecuteTemplate(w, "index", h)
+	} else {
+		r.ParseForm()
+		log.Println(r.PostForm.Get("MACID"))
+		io.WriteString(w, "这是啥，这特么是啥")
+	}
 
 }
 

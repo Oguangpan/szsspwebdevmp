@@ -14,16 +14,42 @@
 	#customers tr.alt td{color:#000000;background-color:#EAF2D3;}
 	.p{color:gray;}
 </style>
+<script>
+function querMac(){
+	var xmlhttp;
+	if (window.XMLHttpRequest)
+	{
+		//  IE7+, Firefox, Chrome, Opera, Safari 浏览器执行代码
+		xmlhttp=new XMLHttpRequest();
+	}
+	else
+	{
+		// IE6, IE5 浏览器执行代码
+		xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+	}
+	xmlhttp.onreadystatechange=function()
+	{
+		if (xmlhttp.readyState==4 && xmlhttp.status==200)
+		{
+			document.getElementById("msg").innerHTML=xmlhttp.responseText;
+		}
+	}
+	
+	xmlhttp.open("POST","/",true);
+	xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+	xmlhttp.send("MACID="+document.getElementById("MACID").value);
+
+}
+</script>
 <div class="queryBar">
-	<h1>欢迎访问办公设备信息查询页</h1>
-	<div class="p">请输入主机mac地址,即可查询对应信息.</div><br>
+	<h1>欢迎访问办公设备信息查询页</h1><p>
 	<div class="fleld">
-		<form name="query" action="query" method="get">
+
 			<input id="search_input" class="prompt" name="MACID" placeholder="请输入需要查询主机的mac地址" autocomplete="off">
-			<input type="submit" value="查询" />
+			<input type="button" value="查询" onClick=querMac() />
 			<input type="button" onClick="location='edit'" value="添加/编辑" /><p>
-			<div>{{ .Msg }}</div>
-		</form>
+			<div id="msg">查询数据库中存在的设备详细信息</div>
+
 	</div>
 </div>
 {{ template "table" .Data }}
