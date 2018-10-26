@@ -34,10 +34,10 @@ function querMac(){
 			document.getElementById("msg").innerHTML=xmlhttp.responseText;
 		}
 	}
-	
-	xmlhttp.open("POST","/",true);
+	var z = "MACID=" + document.getElementById("search_input").value;
+	xmlhttp.open("post","/query",true);
 	xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
-	xmlhttp.send("MACID="+document.getElementById("MACID").value);
+	xmlhttp.send(z);
 
 }
 </script>
@@ -46,7 +46,7 @@ function querMac(){
 	<div class="fleld">
 
 			<input id="search_input" class="prompt" name="MACID" placeholder="请输入需要查询主机的mac地址" autocomplete="off">
-			<input type="button" value="查询" onClick=querMac() />
+			<input type="button" value="查询" onClick="querMac()" />
 			<input type="button" onClick="location='edit'" value="添加/编辑" /><p>
 			<div id="msg">查询数据库中存在的设备详细信息</div>
 

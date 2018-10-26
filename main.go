@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+
 	"regexp" //验证用户输入
 
 	_ "github.com/mattn/go-sqlite3"
@@ -106,45 +107,46 @@ func (p *MyMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func mainPage(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "GET" {
-		t, _ := template.ParseFiles("templates/index.tmpl", "templates/table.tmpl",
-			"templates/index-top.tmpl", "templates/index-bottom.tmpl")
-		h.Msg = "无权限限制,请随意更改数据库"
-		h.Data = d
-		t.ExecuteTemplate(w, "index", h)
-	} else {
-		r.ParseForm()
-		log.Println(r.PostForm.Get("MACID"))
-		io.WriteString(w, "这是啥，这特么是啥")
-	}
 
+	t, _ := template.ParseFiles("templates/index.tmpl", "templates/table.tmpl",
+		"templates/index-top.tmpl", "templates/index-bottom.tmpl")
+	h.Msg = "无权限限制,请随意更改数据库"
+	h.Data = d
+	t.ExecuteTemplate(w, "index", h)
 }
 
 func queryPage(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	t, _ := template.ParseFiles("templates/index.tmpl", "templates/table.tmpl",
-		"templates/index-top.tmpl", "templates/index-bottom.tmpl")
-	v := r.FormValue("MACID")
+	//log.Println(r.PostForm.Get("MACID"))
+	v := r.PostForm.Get("MACID")
+
+	//	t, _ := template.ParseFiles("templates/index.tmpl", "templates/table.tmpl",
+	//		"templates/index-top.tmpl", "templates/index-bottom.tmpl")
+	//	v := r.FormValue("MACID")
 	if v != "" {
 		if m, _ := regexp.MatchString("^([A-Fa-f0-9]{2}:){5}[A-Fa-f0-9]{2}", v); !m {
-			h.Data = d
-			h.Msg = "请输入正确的mac格式...cmd命令行中输入ipconfig即可看到网卡的正确mac信息"
-			t.ExecuteTemplate(w, "index", h)
+			//			h.Data = d
+			//			h.Msg = "请输入正确的mac格式...cmd命令行中输入ipconfig即可看到网卡的正确mac信息"
+			//			t.ExecuteTemplate(w, "index", h)
+			io.WriteString(w, "请输入正确的mac格式...cmd命令行中输入ipconfig即可看到网卡的正确mac信息")
 		} else {
 			// 调用数据库查询 v 返回对应数据到 Data 里面
 			if ok := d.Inquire(v, "mac"); ok {
-				h.Msg = "查询结果如下"
-				h.Data = d
-				t.ExecuteTemplate(w, "index", h)
+				//				h.Msg = "查询结果如下"
+				//				h.Data = d
+				//				t.ExecuteTemplate(w, "index", h)
+				io.WriteString(w, "查询结果如下")
 			} else {
-				h.Msg = "数据库中没有该设备信息"
-				t.ExecuteTemplate(w, "index", h)
+				//				h.Msg = "数据库中没有该设备信息"
+				//				t.ExecuteTemplate(w, "index", h)
+				io.WriteString(w, "数据库中没有该设备信息")
 			}
 		}
 	} else {
-		h.Msg = "请输入查询内容"
-		h.Data = d
-		t.ExecuteTemplate(w, "index", h)
+		//		h.Msg = "请输入查询内容"
+		//		h.Data = d
+		//		t.ExecuteTemplate(w, "index", h)
+		io.WriteString(w, "地址输入框为空，请输入信息")
 	}
 }
 
