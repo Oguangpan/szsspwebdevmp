@@ -1,5 +1,6 @@
 {{ define "index" }}
 {{ template "index-top" }}
+<body>
 <style>
 	body > h2:nth-child(2){text-align: center;color:red;}
 	.queryBar{padding-top:10px;position: relative;text-align: center;max-width: 100%;box-sizing: inherit;}
@@ -15,31 +16,47 @@
 	.p{color:gray;}
 </style>
 <script>
-function querMac(){
-	var xmlhttp;
-	if (window.XMLHttpRequest)
-	{
-		//  IE7+, Firefox, Chrome, Opera, Safari 浏览器执行代码
-		xmlhttp=new XMLHttpRequest();
-	}
-	else
-	{
-		// IE6, IE5 浏览器执行代码
-		xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
-	}
-	xmlhttp.onreadystatechange=function()
-	{
-		if (xmlhttp.readyState==4 && xmlhttp.status==200)
+	function querMac(){
+		var xmlhttp;
+		if (window.XMLHttpRequest)
 		{
-			document.getElementById("msg").innerHTML=xmlhttp.responseText;
+			//  IE7+, Firefox, Chrome, Opera, Safari 浏览器执行代码
+			xmlhttp=new XMLHttpRequest();
 		}
+		else
+		{
+			// IE6, IE5 浏览器执行代码
+			xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+		}
+		xmlhttp.onreadystatechange=function()
+		{
+			if (xmlhttp.readyState==4 && xmlhttp.status==200)
+			{
+				var obj = eval ("(" + xmlhttp.responseText + ")");
+				document.getElementById("msg").innerHTML=obj.Msg;
+				if (obj.Msg == "查询结果如下"){
+                    form_filling(obj);
+				}
+			}
+		}
+		var z = "MACID=" + document.getElementById("search_input").value;
+		xmlhttp.open("post","/query",true);
+		xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+		xmlhttp.send(z);
 	}
-	var z = "MACID=" + document.getElementById("search_input").value;
-	xmlhttp.open("post","/query",true);
-	xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
-	xmlhttp.send(z);
+	function form_filling(obj){
+		var table="<tr><th>Artist</th><th>Title</th></tr>";
+		table += "<tr><td>使用者姓名</td><td>" + obj.Data.User +"</td></tr>";
+		table += "<tr class=\"alt\"><td>所属部门</td><td>" + obj.Data.Dep +"</td></tr>";
+		table += "<tr><td>设备类型</td><td>" + obj.Data.Type +"</td></tr>";
+		table += "<tr class=\"alt\"><td>mac地址</td><td>" + obj.Data.Mac +"</td></tr>";
+		table += "<tr><td>IP地址</td><td>" + obj.Data.Ip +"</td></tr>";
+		table += "<tr class=\"alt\"><td>系统版本</td><td>" + obj.Data.Sys +"</td></tr>";
+		table += "<tr><td>硬盘序列号</td><td>" + obj.Data.Disk +"</td></tr>";
+		table += "<tr class=\"alt\"><td>固定资产编号</td><td>" + obj.Data.Id +"</td></tr>";
+		document.getElementById("customers").innerHTML = table;
+	}
 
-}
 </script>
 <div class="queryBar">
 	<h1>欢迎访问办公设备信息查询页</h1><p>
@@ -48,10 +65,12 @@ function querMac(){
 			<input id="search_input" class="prompt" name="MACID" placeholder="请输入需要查询主机的mac地址" autocomplete="off">
 			<input type="button" value="查询" onClick="querMac()" />
 			<input type="button" onClick="location='edit'" value="添加/编辑" /><p>
-			<div id="msg">查询数据库中存在的设备详细信息</div>
+			<div id="msg">{{.}}</div>
 
 	</div>
 </div>
-{{ template "table" .Data }}
+<div class="table_info">
+	<table id="customers"></table>
+</div></body>
 {{ template "index-bottom" }}
 {{ end }}
