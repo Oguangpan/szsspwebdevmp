@@ -1,3 +1,18 @@
+/*
+2018年10月
+该项目是一个简单的web应用。旨在学习基础的goweb开发。
+期间遇到很多没学过的知识，虽然通过各种方法解决了，但都不是最优解。
+不过作为初期版本能保障正常运行了。
+
+希望在今后不断的学习过程中能逐步的修改这个程序，以努力像正常web程序靠拢。
+
+已经实现：
+通过网页进行增改查操作。
+
+未解决：
+未实现删除操作。
+未进行模块分离。
+*/
 package main
 
 import (
@@ -5,17 +20,67 @@ import (
 	"encoding/json" // ajax 返回给网页脚本端的内容
 	"html/template" // 生成需要的网页模板
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"regexp" //验证用户输入
 
 	_ "github.com/mattn/go-sqlite3" // 数据库
 )
 
-var db *sql.DB
+// 定义配置文件,读取设定信息
+type Config struct {
+	Prot    string
+	Datadir string
+}
 
+const logDir string = "./dev.log"
+const configDir string = "./config.json"
+
+var loger *log.Logger
+var db *sql.DB
+var conf *Config
+
+type JsonStruct struct{}
+
+func NewJsonStruct() *JsonStruct {
+	return &JsonStruct{}
+}
+
+func (j *JsonStruct) Load(filename string, v interface{}) {
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		loger.Println("读取配置文件失败:", err)
+		return
+	}
+	err = json.Unmarshal(data, v)
+	if err != nil {
+		loger.Println("解析配置文件失败：", err)
+		return
+	}
+
+}
+
+//初始化设置日志文件读取配置文件连接数据库等操作
 func init() {
-	db, _ = sql.Open("sqlite3", "data/szdevDB.db")
+
+	file, err := os.Open(logDir)
+	//defer file.Close()
+	if err != nil {
+		log.Fatalln("open log file error!")
+	}
+
+	loger = log.New(file, "[运行日志]", log.Ldate|log.Ltime|log.Lshortfile)
+	// 配置文件
+	Jsonparse := NewJsonStruct()
+	Jsonparse.Load(configDir, &conf)
+	// 数据库
+	db, err = sql.Open("sqlite3", conf.Datadir)
+	if err != nil {
+		loger.Println("打开数据库错误：", err)
+		return
+	}
 }
 
 // 设备信息结构体
@@ -53,6 +118,7 @@ func (s *Basic_information_of_device) Inquire(c string, i string) (ok bool) {
 	row := db.QueryRow(t)
 	err := row.Scan(&s.Id, &s.User, &s.Dep, &s.Type, &s.Sys, &s.Ip, &s.Mac, &s.Disk)
 	if err != nil {
+		loger.Println("查询数据库错误：", err)
 		return false
 	}
 	return true
@@ -62,6 +128,7 @@ func (s *Basic_information_of_device) Modify(mac string) (ok bool) {
 
 	stmt, err := db.Prepare("update COMPUTERA set ID=?,USER=?,DEP=?,TYPE=?,SYS=?,IP=?,MAC=?,DISK=? where MAC=?")
 	if err != nil {
+		loger.Println("更新数据库错误：", err)
 		return false
 	}
 	stmt.Exec(s.Id, s.User, s.Dep, s.Type, s.Sys, s.Ip, s.Mac, s.Disk, mac)
@@ -73,18 +140,22 @@ func (s *Basic_information_of_device) Modify(mac string) (ok bool) {
 func (s *Basic_information_of_device) Delete(mac string) (ok bool) {
 	stmt, err := db.Prepare("delete from COMPUTERA where MAC=?")
 	if err != nil {
+		loger.Println("删除数据库记录错误：", err)
 		return false
 	}
 	_, err = stmt.Exec(mac)
 	if err != nil {
+		loger.Println("删除数据库记录错误：", err)
 		return false
 	}
+	loger.Println("成功删除数据库：", mac)
 	return true
 }
 
 func (s *Basic_information_of_device) Increase() (ok bool) {
 	sql := `INSERT INTO COMPUTERA VALUES ('` + s.Id + `','` + s.User + `','` + s.Dep + `','` + s.Type + `','` + s.Sys + `','` + s.Ip + `','` + s.Mac + `','` + s.Disk + `');`
 	db.Exec(sql)
+	loger.Println("新增数据库记录:", s.Mac)
 	return true
 }
 
@@ -113,6 +184,7 @@ func (p *MyMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		editerrProcessPage(w, r)
 	default:
 		http.NotFound(w, r)
+		loger.Println("用户访问不存在路径.")
 	}
 }
 
@@ -178,7 +250,7 @@ func editerrProcessPage(w http.ResponseWriter, r *http.Request) {
 	// 先解析传递过来的数据,并传递给h对象
 	err := json.Unmarshal([]byte(jsonBlob), &h)
 	if err != nil {
-		log.Println("error:", err)
+		loger.Println("error:", err)
 	}
 	d = h.Data
 	e := new(Echo)
@@ -239,10 +311,10 @@ func editPage(w http.ResponseWriter, r *http.Request) {
 func main() {
 	defer db.Close()
 	mux := &MyMux{}
-	log.Println("now Listening port...")
-	err := http.ListenAndServe(":9999", mux)
+	loger.Println("服务器启动，正在启动监听端口...", conf.Prot)
+	err := http.ListenAndServe(conf.Prot, mux)
 	if err != nil {
-		log.Println("ListenAndServe:", err)
+		loger.Println("服务器启动失败:", err)
 	}
 
 }
