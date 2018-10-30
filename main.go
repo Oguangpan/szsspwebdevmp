@@ -62,27 +62,6 @@ func (j *JsonStruct) Load(filename string, v interface{}) {
 
 }
 
-//初始化设置日志文件读取配置文件连接数据库等操作
-func init() {
-
-	file, err := os.Open(logDir)
-	//defer file.Close()
-	if err != nil {
-		log.Fatalln("open log file error!")
-	}
-
-	loger = log.New(file, "[运行日志]", log.Ldate|log.Ltime|log.Lshortfile)
-	// 配置文件
-	Jsonparse := NewJsonStruct()
-	Jsonparse.Load(configDir, &conf)
-	// 数据库
-	db, err = sql.Open("sqlite3", conf.Datadir)
-	if err != nil {
-		loger.Println("打开数据库错误：", err)
-		return
-	}
-}
-
 // 设备信息结构体
 type Basic_information_of_device struct {
 	User string
@@ -194,8 +173,6 @@ func mainPage(w http.ResponseWriter, r *http.Request) {
 	t, _ := template.ParseFiles("templates/index.tmpl",
 		"templates/index-top.tmpl",
 		"templates/index-bottom.tmpl")
-	//h.Msg = "无权限限制,请随意更改数据库"
-	//h.Data = d
 	t.ExecuteTemplate(w, "index", "")
 }
 
@@ -309,10 +286,28 @@ func editPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+
+	file, err := os.Create(logDir)
+	defer file.Close()
+	if err != nil {
+		log.Fatalln("open log file error!")
+	}
+
+	loger = log.New(file, "[运行日志]", log.LstdFlags)
+	// 配置文件
+	Jsonparse := NewJsonStruct()
+	Jsonparse.Load(configDir, &conf)
+	// 数据库
+	db, err = sql.Open("sqlite3", conf.Datadir)
+	if err != nil {
+		loger.Println("打开数据库错误：", err)
+		return
+	}
+
 	defer db.Close()
 	mux := &MyMux{}
 	loger.Println("服务器启动，正在启动监听端口...", conf.Prot)
-	err := http.ListenAndServe(conf.Prot, mux)
+	err = http.ListenAndServe(conf.Prot, mux)
 	if err != nil {
 		loger.Println("服务器启动失败:", err)
 	}
